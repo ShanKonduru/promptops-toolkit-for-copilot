@@ -40,6 +40,81 @@ This triggers a full workflow:
 
 ---
 
+```mermaid
+graph TB
+    subgraph chaos["❌ THE PROBLEM: Prompt Chaos"]
+        scattered["📝 Prompts Scattered Across:"]
+        chat["💬 Chat Messages"]
+        docs["📄 Docs & Notes"]
+        personal["🗂️ Personal Files"]
+        chat --> scattered
+        docs --> scattered
+        personal --> scattered
+    end
+
+    subgraph solution["✨ THE SOLUTION: PromptOps Toolkit"]
+        versioned["📦 Versioned Prompt Library"]
+        reusable["♻️ Reusable Workflows"]
+        structured["🏗️ Structured Markdown"]
+        vcs["🔒 Version Controlled"]
+        versioned --> reusable
+        structured --> reusable
+        vcs --> reusable
+    end
+
+    subgraph lifecycle["🔄 FULL DEV LIFECYCLE"]
+        bootstrap["🚀 Project Bootstrap"]
+        setup["⚙️ Environment Setup"]
+        feature["🌿 Feature Branches"]
+        test["✅ Test & Coverage"]
+        security["🔐 Security Audit"]
+        review["👀 Code Review"]
+        release["🎯 Release & Push"]
+        git["📜 Git History"]
+        
+        bootstrap --> setup
+        setup --> feature
+        feature --> test
+        test --> security
+        security --> review
+        review --> release
+        git -.-> any["(at any time)"]
+    end
+
+    subgraph execution["⚡ EXECUTABLE IN VS CODE"]
+        command["/run-tests-with-coverage src/payments 85"]
+        runs["1️⃣ Checks tools"]
+        installs["2️⃣ Installs deps"]
+        tests["3️⃣ Runs tests"]
+        enforces["4️⃣ Enforces threshold"]
+        
+        command --> runs
+        runs --> installs
+        installs --> tests
+        tests --> enforces
+    end
+
+    subgraph benefits["🎯 OUTCOMES"]
+        onboard["⏱️ Faster Onboarding"]
+        consistent["✨ Consistent Quality"]
+        leftshift["🎖️ Shift Left Discipline"]
+        leverage["💪 Engineering Leverage"]
+    end
+
+    chaos -->|solves| solution
+    solution -->|enables| lifecycle
+    lifecycle -->|example| execution
+    execution -->|delivers| benefits
+
+    style chaos fill:#ffcccc,stroke:#cc0000,stroke-width:2px,color:#000
+    style solution fill:#ccffcc,stroke:#00cc00,stroke-width:2px,color:#000
+    style lifecycle fill:#ccccff,stroke:#0000cc,stroke-width:2px,color:#000
+    style execution fill:#ffffcc,stroke:#ccaa00,stroke-width:2px,color:#000
+    style benefits fill:#ffccff,stroke:#cc00cc,stroke-width:2px,color:#000
+```
+
+---
+
 ## What makes this different from typical prompt libraries
 
 **Executable workflows, not snippets**  
