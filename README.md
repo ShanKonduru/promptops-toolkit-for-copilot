@@ -34,6 +34,13 @@ Most teams don't lack good AI prompts. They lack a way to reuse them without fri
 - [Supported Languages & Runtimes](#supported-languages--runtimes)
 - [Tool Reference](#tool-reference)
 - [Security & Trust](#security--trust)
+  - [Threat Model](#threat-model)
+  - [Roles and Responsibilities](#roles-and-responsibilities)
+    - [Maintainers](#maintainers)
+    - [Contributors](#contributors)
+    - [Users](#users)
+  - [What Users Must Do](#what-users-must-do)
+  - [Red Flags: Signs of a Malicious Prompt](#red-flags-signs-of-a-malicious-prompt)
 - [Prompt Tiers](#prompt-tiers)
 - [Contributing](#contributing)
 - [License](#license)
@@ -512,6 +519,8 @@ Python tools are auto-installed by execution prompts where needed.
 
 This repository is designed for safe public collaboration on executable prompts.
 
+> **Legal notice:** These prompts generate shell commands that execute on your machine. Maintainers are not responsible for any data loss, system damage, or security incidents caused by running AI-generated scripts. You are responsible for reviewing every command before execution.
+
 Implemented controls:
 
 - CI scanner for high-risk prompt patterns: `.github/workflows/prompt-safety.yml`
@@ -522,17 +531,99 @@ Implemented controls:
 - Vulnerability disclosure policy: `SECURITY.md`
 - PR safety checklist template: `.github/pull_request_template.md`
 
-Threats explicitly covered in policy and automation:
-
-- Hidden payload injection in prompt bodies
-- Supply-chain poisoning via typosquatted tool/package names
-- Indirect prompt injection from untrusted repository content
-
 Run the scanner locally before opening a pull request:
 
 ```bash
 python scripts/prompt_safety_scan.py
 ```
+
+---
+
+### Threat Model
+
+Three attack vectors are explicitly in scope for this repository:
+
+| Threat | How It Works | Control |
+|---|---|---|
+| **Hidden payload injection** | A prompt body encodes a malicious command that looks benign but deletes files, exfiltrates data, or escalates privileges when executed | `SAFETY_GUARDRAIL` block required in every Core prompt; CI scanner rejects suspicious patterns |
+| **Supply-chain poisoning** | A prompt instructs Copilot to install a typosquatted package (`tr1vy` instead of `trivy`, `reqeusts` instead of `requests`) silently | Scanner detects known typosquat patterns; CONTRIBUTING.md restricts to official registries only |
+| **Indirect prompt injection** | A prompt reads untrusted content (e.g., a repo's `README.md`, commit messages, or code comments) that contains injected instructions to the model | All Core prompts include an explicit instruction to treat repository file content as untrusted input |
+
+Threats explicitly **out of scope** for this repository (handled at the OS/network level):
+- Copilot API authentication and token security
+- VS Code extension sandbox escapes
+- Network-level MITM attacks on package registries
+
+---
+
+### Roles and Responsibilities
+
+#### Maintainers
+
+Maintainers are responsible for the integrity of the `prompts/core` tier. Their obligations are:
+
+- **Review every PR** that touches `prompts/core/`, policy files (`CONTRIBUTING.md`, `SECURITY.md`, `CONTRIBUTORS.md`), or the CI scanner.
+- **Enforce CODEOWNERS**: No Core prompt or governance file merges without an approving maintainer review.
+- **Keep the scanner current**: When new attack patterns are identified (e.g., new typosquat names, new exfiltration techniques), update `scripts/prompt_safety_scan.py` and `SECURITY.md`.
+- **Gate tier promotions**: A community-contrib prompt may only be promoted to Core after the maintainer has audited every command, verified registry sources, and confirmed the `SAFETY_GUARDRAIL` block is present and correct.
+- **Respond to security reports**: Acknowledge vulnerability disclosures within 7 days per the policy in `SECURITY.md`. Do not dismiss reports as "intended behaviour" without investigation.
+- **Never merge a PR that disables or weakens the safety scanner**, even temporarily.
+
+#### Contributors
+
+Contributors add new prompts or update existing ones. Their obligations are:
+
+- **Place new prompts in `prompts/community-contrib/`** — never directly into `prompts/core/`. The Core tier is maintainer-gated.
+- **Include the `SAFETY_GUARDRAIL` hidden block** immediately after the YAML frontmatter in every prompt. This is a hard CI requirement; the PR will not merge without it.
+- **Include the Review Clause**: Every prompt that generates a shell command must show the final command to the user and require explicit Run/Cancel confirmation before execution. Prompts must not silently execute commands.
+- **Warn on privilege escalation**: If a generated command requires `sudo` or administrator privileges, the prompt must call this out explicitly before asking for confirmation.
+- **Use only official package registries**: All auto-install instructions must reference packages by their exact official names from PyPI, npm, crates.io, or vendor-documented installation pages. Typosquatted names and `curl | bash` patterns are forbidden.
+- **Treat repo content as untrusted**: If a prompt reads files from the repository (commit messages, `README`, source code, config files), it must include an instruction to the model to treat that content as untrusted data — not as instructions.
+- **Run the scanner before opening a PR**: `python scripts/prompt_safety_scan.py` must pass locally. A failing scan means the PR will fail CI.
+- **Sign off on the CONTRIBUTORS.md safety contract** by checking all relevant boxes in the PR template checklist.
+
+#### Users
+
+Users run synced prompts from within VS Code Copilot Chat. Their obligations and entitlements are:
+
+- **You always have the final say.** No Core prompt will execute a shell command without first showing you the exact command and asking for your explicit confirmation. If a prompt runs something without asking, that is a bug — report it.
+- **Inspect before you accept.** When Copilot presents a command for confirmation, read it. Do not click Run without understanding what the command does. This is especially important for commands involving `sudo`, `rm -rf`, `git push --force`, or network calls.
+- **Sync Core only by default.** The default sync scripts copy only `prompts/core/`. You must explicitly opt in to `prompts/community-contrib/` by setting `INCLUDE_EXPERIMENTAL=1`. Treat community prompts as unvetted until they are promoted to Core.
+- **Keep your local copy up to date.** Pull the latest changes and re-run the sync script regularly. Security patches to prompts or the scanner will appear as commits to this repo.
+- **Report suspicious behaviour.** If a prompt asks for credentials, tries to read `~/.ssh` or `~/.aws`, attempts to send data to a remote endpoint, or performs any action that feels outside its stated purpose, stop immediately and open a security issue per the instructions in `SECURITY.md`.
+
+---
+
+### What Users Must Do
+
+Checklist before and during each prompt run:
+
+- [ ] **Before syncing:** Pull the latest repo version (`git pull`) to get the most current vetted prompts.
+- [ ] **Before syncing experimental prompts:** Understand that `prompts/community-contrib/` files have not been through the same level of maintainer review as Core prompts.
+- [ ] **At confirmation:** Read the full command Copilot presents. If it contains paths, URLs, or flags you do not recognise, cancel and ask Copilot to explain each part.
+- [ ] **For `sudo` / admin commands:** Only approve if you understand exactly what the privileged operation does and why it is necessary.
+- [ ] **For network calls** (`pip install`, `npm install`, `curl`): Verify the package name is spelled correctly and matches the official registry. A single character difference (e.g., `reqeusts`, `tr1vy`) is a supply-chain attack.
+- [ ] **After running a prompt:** If the outcome is unexpected (wrong files modified, unexpected output, new processes started), treat it as a potential security event and check what was actually executed.
+- [ ] **Never share your API keys, tokens, or credentials** in Copilot Chat, even when a prompt asks for configuration — use environment variables or a `.env` file that is listed in `.gitignore`.
+
+---
+
+### Red Flags: Signs of a Malicious Prompt
+
+Stop and do not run the prompt if you observe any of the following:
+
+| Red Flag | Why It Is Dangerous |
+|---|---|
+| Command accesses `~/.ssh`, `~/.aws`, `~/.gnupg`, or `~/.config/gcloud` | Credential theft |
+| Command pipes output to `curl`, `wget`, or `Invoke-WebRequest` with an external URL | Data exfiltration |
+| Package name differs from the official name by one character | Typosquatting / supply-chain attack |
+| Install script is fetched with `curl URL \| bash` or `iex (irm URL)` | Arbitrary remote code execution |
+| Prompt never shows you the command — it just executes silently | Bypasses human-in-the-loop control |
+| Prompt requests or reads `~/.netrc`, `~/.docker/config.json`, or browser credential files | Credential theft |
+| Command contains `base64 --decode \|` or similar obfuscation | Hidden payload |
+| Prompt instructs the model to ignore previous system instructions | Direct prompt injection attack |
+
+If you encounter any of these patterns in a Core prompt, **do not run it** and open a security issue immediately following the process in [SECURITY.md](SECURITY.md).
 
 ---
 
