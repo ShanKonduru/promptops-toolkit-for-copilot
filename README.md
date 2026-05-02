@@ -60,6 +60,8 @@ Think of it as CI/CD for developer workflows — but triggered from your editor.
 | Onboarding is slow | Clone → sync → use, in minutes |
 | Inconsistent releases | One-command version bump, commit, tag, push |
 
+![PromptOps Toolkit Overview](From%20Prompt%20Chaos%20to%20Developer%20Flow%20Introducing%20PromptOps%20Toolkit%20for%20Copilot.png)
+
 ---
 
 ## Prerequisites

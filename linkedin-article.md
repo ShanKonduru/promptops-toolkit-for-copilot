@@ -113,6 +113,8 @@ graph TB
     style benefits fill:#ffccff,stroke:#cc00cc,stroke-width:2px,color:#000
 ```
 
+![PromptOps Toolkit Overview](From%20Prompt%20Chaos%20to%20Developer%20Flow%20Introducing%20PromptOps%20Toolkit%20for%20Copilot.png)
+
 ---
 
 ## What makes this different from typical prompt libraries
