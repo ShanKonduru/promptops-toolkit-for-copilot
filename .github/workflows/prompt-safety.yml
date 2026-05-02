@@ -1,0 +1,27 @@
+name: Prompt Safety Checks
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  scan-prompts:
+    name: Scan Prompt Safety
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run prompt safety scanner
+        run: python scripts/prompt_safety_scan.py

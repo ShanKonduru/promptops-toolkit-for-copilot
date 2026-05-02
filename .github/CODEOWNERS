@@ -1,0 +1,7 @@
+# Default owner for all repository content
+* @ShanKonduru
+
+# Prompt files and automation require owner review
+*.prompt.md @ShanKonduru
+scripts/* @ShanKonduru
+.github/* @ShanKonduru

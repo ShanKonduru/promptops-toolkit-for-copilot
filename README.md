@@ -31,6 +31,7 @@ Most teams don't lack good AI prompts. They lack a way to reuse them without fri
 - [Recommended Workflow](#recommended-workflow)
 - [Supported Languages & Runtimes](#supported-languages--runtimes)
 - [Tool Reference](#tool-reference)
+- [Security & Trust](#security--trust)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -490,6 +491,27 @@ Full toolchain support is currently Python-first. Node.js and Rust support cover
 | `trivy` | latest | `run-security-audit` | See [trivy releases](https://github.com/aquasecurity/trivy/releases) |
 
 Python tools are auto-installed by execution prompts where needed.
+
+---
+
+## Security & Trust
+
+This repository is designed for safe public collaboration on executable prompts.
+
+Implemented controls:
+
+- CI scanner for high-risk prompt patterns: `.github/workflows/prompt-safety.yml`
+- Rule-based prompt scanner script: `scripts/prompt_safety_scan.py`
+- CODEOWNERS enforcement for prompt and policy files: `.github/CODEOWNERS`
+- Contributor safety requirements: `CONTRIBUTING.md`
+- Vulnerability disclosure policy: `SECURITY.md`
+- PR safety checklist template: `.github/pull_request_template.md`
+
+Run the scanner locally before opening a pull request:
+
+```bash
+python scripts/prompt_safety_scan.py
+```
 
 ---
 
