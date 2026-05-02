@@ -34,6 +34,7 @@ Most teams don't lack good AI prompts. They lack a way to reuse them without fri
 - [Supported Languages & Runtimes](#supported-languages--runtimes)
 - [Tool Reference](#tool-reference)
 - [Security & Trust](#security--trust)
+  - [GitHub Repository Controls](#github-repository-controls)
   - [Threat Model](#threat-model)
   - [Roles and Responsibilities](#roles-and-responsibilities)
     - [Maintainers](#maintainers)
@@ -536,6 +537,98 @@ Run the scanner locally before opening a pull request:
 ```bash
 python scripts/prompt_safety_scan.py
 ```
+
+---
+
+### GitHub Repository Controls
+
+The following controls are enforced directly at the GitHub repository level — independently of any local developer action.
+
+#### Branch Protection (`main` / `master`)
+
+These rules must be active in **Settings > Branches > Branch protection rules**:
+
+| Rule | Purpose |
+|---|---|
+| Require status checks to pass before merging | The `Scan Prompt Safety` CI job (`prompt-safety.yml`) must pass — no merge is possible with a failing scanner |
+| Require branches to be up to date before merging | Prevents stale-branch merges that could bypass a scanner fix added to `main` |
+| Require pull request reviews before merging | At least one human reviewer must approve every change |
+| Require review from Code Owners | Enforces the CODEOWNERS file — maintainer approval is mandatory for prompts, scripts, and `.github/` files |
+| Dismiss stale pull request approvals when new commits are pushed | Prevents a reviewed-clean PR from being dirtied after approval |
+| Do not allow bypassing the above settings | Even repository admins cannot force-merge without passing all checks |
+
+> To verify these rules are active: **GitHub > Settings > Branches > Branch protection rules**.
+
+#### CODEOWNERS (`.github/CODEOWNERS`)
+
+Every file in this repository has a required owner review. Critical paths have explicit rules:
+
+```
+*                  @ShanKonduru   # all files — default owner
+*.prompt.md        @ShanKonduru   # any prompt file, any location
+scripts/*          @ShanKonduru   # scanner and automation scripts
+.github/*          @ShanKonduru   # CI, templates, and CODEOWNERS itself
+```
+
+This means no prompt file, no CI change, and no policy document can merge without the maintainer's explicit approval — regardless of who opens the PR.
+
+#### CI: Prompt Safety Scanner (`.github/workflows/prompt-safety.yml`)
+
+The workflow runs on every pull request and push to `main`/`master`:
+
+```
+Triggers : pull_request → [main, master]
+           push         → [main, master]
+Permissions: contents: read  (read-only; cannot write back to the repo)
+Job       : python scripts/prompt_safety_scan.py
+```
+
+The scanner checks every `*.prompt.md` file recursively and fails the build if any file:
+- Is missing the `SAFETY_GUARDRAIL` block
+- Is missing the `Never execute commands silently` instruction
+- Is missing the `require explicit user approval` clause
+- Contains a known typosquatted package name (e.g., `tr1vy`, `trivy-fix`)
+- Contains a sensitive-file exfiltration pattern (reading `~/.ssh`, `~/.aws`, `.env` and piping to `curl`/`wget`)
+- Contains other high-risk shell patterns (raw `curl | bash`, `iex (irm ...)`, silent `rm -rf`, obfuscated `base64` decode)
+
+#### Pull Request Template (`.github/pull_request_template.md`)
+
+Every PR automatically pre-fills a **Prompt Safety Checklist** that contributors must complete before a reviewer will approve:
+
+- No destructive commands introduced
+- No obfuscated execution patterns
+- No remote content piped directly into a shell
+- Prompt includes `SAFETY_GUARDRAIL` hidden block
+- Prompt shows final command and requires explicit Run/Cancel confirmation
+- Auto-install uses official registries with exact package names
+- Prompt treats repository content as untrusted input
+- Scanner passed locally (`python scripts/prompt_safety_scan.py`)
+- Prompt tested locally
+
+This checklist is not enforced automatically by GitHub, but an incomplete checklist is a red flag during code review.
+
+#### Least-Privilege CI Permissions
+
+The CI workflow is declared with minimal permissions:
+
+```yaml
+permissions:
+  contents: read
+```
+
+This means the GitHub Actions runner cannot write to the repository, create releases, push tags, or interact with issues. It can only read the source code to run the scanner. This limits the blast radius of a compromised or malicious workflow step.
+
+#### What Is NOT Yet Enabled (Recommended Next Steps)
+
+The controls below are recommended but require manual activation in GitHub Settings:
+
+| Control | How to Enable | Benefit |
+|---|---|---|
+| Branch protection rules | Settings > Branches > Add rule | Blocks direct pushes and enforces CODEOWNERS + CI |
+| Secret scanning | Settings > Security > Secret scanning | Detects accidentally committed tokens or API keys |
+| Dependabot alerts | Settings > Security > Dependabot | Flags vulnerable dependencies in CI workflow actions |
+| Push protection | Settings > Security > Push protection | Blocks commits containing detected secrets before they reach the remote |
+| Require signed commits | Branch protection > Require signed commits | Ensures commits are cryptographically attributed to the author |
 
 ---
 
