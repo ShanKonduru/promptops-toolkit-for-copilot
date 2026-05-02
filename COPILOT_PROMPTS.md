@@ -1,6 +1,6 @@
 # Copilot Prompts Guide
 
-A collection of 10 reusable Copilot prompts for common developer workflows. All prompts are stored in your VS Code roaming profile and available across all projects.
+A collection of 11 reusable Copilot prompts for common developer workflows. All prompts are stored in your VS Code roaming profile and available across all projects.
 
 **Location:** `~/.config/Code/User/prompts/` (or equivalent on your OS)
 
@@ -35,7 +35,7 @@ For existing projects, ensure all dependencies are installed:
 
 Then use prompts freely.
 
-**Note:** All execution prompts (like `/run-tests`, `/run-security-audit`, `/quick-code-review`) now include **automatic tool verification**. They detect if required tools are installed, and if not, generate and execute install commands before proceeding with the primary task. No manual setup needed!
+**Note:** All execution prompts (like `/run-tests`, `/run-tests-with-coverage`, `/run-security-audit`, `/quick-code-review`) include **automatic tool verification**. They detect if required tools are installed, and if not, generate and execute install commands before proceeding with the primary task.
 
 ---
 
@@ -199,6 +199,26 @@ Runs your test suite with optional coverage analysis and generates an HTML repor
 /run-tests test_router_engine.py
 ```
 → Runs only router engine tests and generates coverage report.
+
+---
+
+## 2.1 `/run-tests-with-coverage` — Enforce Coverage Thresholds
+
+### What It Does
+Runs tests with module-level coverage targeting and enforces a minimum threshold.
+
+### How to Use
+```
+/run-tests-with-coverage                   # Defaults: module=src, threshold=80
+/run-tests-with-coverage src/payments 85   # Payments module at 85%+
+/run-tests-with-coverage src 90            # Entire src at 90%+
+```
+
+### Output
+- Coverage summary in terminal
+- HTML coverage report
+- JSON coverage report
+- Non-zero exit if threshold is not met
 
 ---
 
@@ -411,6 +431,7 @@ Creates and checks out a new branch following Git Flow conventions:
 | `/setup-dev-environment` | Install dev tools (existing projects) | 10 min setup |
 | `/release` | Bump version, tag, push | 5 min/week |
 | `/run-tests` | Verify quality before commit | 2 min/day |
+| `/run-tests-with-coverage` | Enforce module coverage gates | 2 min/day |
 | `/run-security-audit` | Find vulnerabilities early | 3 min/week |
 | `/generate-release-notes` | Document releases | 10 min/release |
 | `/quick-code-review` | Catch issues before CI | 5 min/commit |
@@ -425,6 +446,7 @@ Creates and checks out a new branch following Git Flow conventions:
 ### 0. Auto-Install Feature
 All execution prompts now **automatically verify and install** required tools:
 - `run-tests` checks for `pytest` and `pytest-cov`
+- `run-tests-with-coverage` checks for `pytest` and `pytest-cov`
 - `run-security-audit` checks for `pip-audit`, `bandit`, and `trivy`
 - `quick-code-review` checks for `pylint`, `mypy`, `black`, and `bandit`
 - `show-coverage-report` checks for `coverage` tools

@@ -19,12 +19,13 @@ Most teams don't lack good AI prompts. They lack a way to reuse them without fri
   - [setup-dev-environment](#1-setup-dev-environment)
   - [create-feature-branch](#2-create-feature-branch)
   - [run-tests](#3-run-tests)
-  - [show-coverage-report](#4-show-coverage-report)
-  - [run-security-audit](#5-run-security-audit)
-  - [quick-code-review](#6-quick-code-review)
-  - [generate-release-notes](#7-generate-release-notes)
-  - [release](#8-release)
-  - [view-git-log](#9-view-git-log)
+  - [run-tests-with-coverage](#4-run-tests-with-coverage)
+  - [show-coverage-report](#5-show-coverage-report)
+  - [run-security-audit](#6-run-security-audit)
+  - [quick-code-review](#7-quick-code-review)
+  - [generate-release-notes](#8-generate-release-notes)
+  - [release](#9-release)
+  - [view-git-log](#10-view-git-log)
 - [How Prompts Work](#how-prompts-work)
 - [Syncing Prompts to VS Code](#syncing-prompts-to-vs-code)
 - [Recommended Workflow](#recommended-workflow)
@@ -54,7 +55,7 @@ Think of it as CI/CD for developer workflows — but triggered from your editor.
 |---|---|
 | Prompts scattered across chats and notes | Single versioned repo of structured prompt files |
 | Different devs run tools differently | Standardized, parameterized workflows |
-| Tools missing on a new machine | Every prompt auto-detects and installs dependencies |
+| Tools missing on a new machine | Execution prompts auto-detect and install required tooling |
 | Onboarding is slow | Clone → sync → use, in minutes |
 | Inconsistent releases | One-command version bump, commit, tag, push |
 
@@ -199,9 +200,34 @@ Run this once after cloning an existing project or onboarding a new team member.
 | `filter` | string | No | Test file name or pattern |
 | `coverage` | boolean | No | Generate HTML coverage report |
 
+For strict coverage enforcement by module and threshold, use `run-tests-with-coverage`.
+
 ---
 
-### 4. `show-coverage-report`
+### 4. `run-tests-with-coverage`
+
+**Run tests with module-level coverage targeting and threshold enforcement.**
+
+```
+/run-tests-with-coverage
+/run-tests-with-coverage src/payments 85
+/run-tests-with-coverage src 90
+```
+
+- Verifies `pytest` and `pytest-cov` are installed; installs if missing
+- Generates terminal, HTML, and JSON coverage reports
+- Fails the workflow if coverage is below the provided threshold
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `module` | string | No | Coverage target path (default: `src`) |
+| `threshold` | number | No | Minimum required coverage percent (default: 80) |
+
+---
+
+### 5. `show-coverage-report`
 
 **Open and summarize the latest test coverage report.**
 
@@ -218,7 +244,7 @@ Run this once after cloning an existing project or onboarding a new team member.
 
 ---
 
-### 5. `run-security-audit`
+### 6. `run-security-audit`
 
 **Scan for vulnerabilities across three dimensions.**
 
@@ -235,7 +261,7 @@ Run this once after cloning an existing project or onboarding a new team member.
 | Static analysis (SAST) | `bandit` | Code-level security issues |
 | Filesystem scan | `trivy` | Container and filesystem threats |
 
-Reports saved to `security_reports/` in JSON and HTML formats.
+Reports saved to `security_reports/` in JSON format with generated HTML summaries.
 
 **Parameters:**
 
@@ -246,7 +272,7 @@ Reports saved to `security_reports/` in JSON and HTML formats.
 
 ---
 
-### 6. `quick-code-review`
+### 7. `quick-code-review`
 
 **Self-review uncommitted changes before committing.**
 
@@ -271,7 +297,7 @@ All required tools are verified and installed if missing.
 
 ---
 
-### 7. `generate-release-notes`
+### 8. `generate-release-notes`
 
 **Create a changelog from Git commit history since the last tag.**
 
@@ -304,7 +330,7 @@ Output: `RELEASE_NOTES.md` (Markdown) or `RELEASE_NOTES.json` (for automation).
 
 ---
 
-### 8. `release`
+### 9. `release`
 
 **Full automated release: version bump, commit, tag, and push.**
 
@@ -333,7 +359,7 @@ Steps executed automatically:
 
 ---
 
-### 9. `view-git-log`
+### 10. `view-git-log`
 
 **Search and visualize commit history with filtering.**
 
@@ -377,7 +403,7 @@ parameters:
 
 The prompt body contains shell commands and usage patterns. Parameters are referenced as `{{ filter }}` inside the prompt body and resolved by Copilot at runtime.
 
-**Self-healing execution:** Every prompt that invokes shell tools includes a pre-flight check block that detects missing tools and installs them before the primary task runs. No manual setup is needed after the initial sync.
+**Self-healing execution:** Execution prompts include pre-flight checks that detect missing tools and install them before running primary tasks.
 
 ---
 
@@ -410,7 +436,7 @@ When prompts are updated, pull the latest changes and re-run the sync script.
 /create-feature-branch add-core-logic
 # ... write code ...
 /quick-code-review
-/run-tests
+/run-tests-with-coverage src 85
 /run-security-audit
 /release 0.1.0 "Initial release"
 ```
@@ -421,7 +447,7 @@ When prompts are updated, pull the latest changes and re-run the sync script.
 /create-feature-branch add-new-feature
 # ... write code ...
 /quick-code-review          # catch issues before committing
-/run-tests                  # verify nothing broke
+/run-tests-with-coverage src 85
 /show-coverage-report       # check coverage gaps
 /view-git-log               # review recent history
 ```
@@ -429,7 +455,7 @@ When prompts are updated, pull the latest changes and re-run the sync script.
 ### Release day
 
 ```
-/run-tests
+/run-tests-with-coverage src 85
 /run-security-audit
 /generate-release-notes
 /release 1.2.0 "Add payment module"
@@ -453,8 +479,8 @@ Full toolchain support is currently Python-first. Node.js and Rust support cover
 
 | Tool | Version | Used By | Install |
 |---|---|---|---|
-| `pytest` | ≥8.2.0 | `run-tests` | `pip install pytest` |
-| `pytest-cov` | ≥5.0.0 | `run-tests`, `show-coverage-report` | `pip install pytest-cov` |
+| `pytest` | ≥8.2.0 | `run-tests`, `run-tests-with-coverage` | `pip install pytest` |
+| `pytest-cov` | ≥5.0.0 | `run-tests`, `run-tests-with-coverage`, `show-coverage-report` | `pip install pytest-cov` |
 | `coverage` | latest | `show-coverage-report` | `pip install coverage` |
 | `bandit` | ≥1.7.9 | `run-security-audit`, `quick-code-review` | `pip install bandit` |
 | `pip-audit` | ≥2.7.0 | `run-security-audit` | `pip install pip-audit` |
@@ -463,7 +489,7 @@ Full toolchain support is currently Python-first. Node.js and Rust support cover
 | `mypy` | ≥1.8.0 | `quick-code-review` | `pip install mypy` |
 | `trivy` | latest | `run-security-audit` | See [trivy releases](https://github.com/aquasecurity/trivy/releases) |
 
-All Python tools are installed automatically by each prompt if not already present.
+Python tools are auto-installed by execution prompts where needed.
 
 ---
 

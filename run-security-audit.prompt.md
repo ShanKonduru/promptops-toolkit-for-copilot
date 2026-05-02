@@ -59,25 +59,65 @@ foreach ($tool in $tools) {
 
 **Dependency vulnerabilities:**
 ```bash
-pip-audit
+mkdir -p security_reports
+pip-audit -f json > security_reports/pip-audit.json
+python -c "
+import json, html
+data = json.load(open('security_reports/pip-audit.json', 'r', encoding='utf-8'))
+body = '<html><body><h1>pip-audit report</h1><pre>' + html.escape(json.dumps(data, indent=2)) + '</pre></body></html>'
+open('security_reports/pip-audit.html', 'w', encoding='utf-8').write(body)
+"
 ```
 
 **Code security issues (SAST):**
 ```bash
-bandit -r src/
+mkdir -p security_reports
+bandit -r src/ -f json -o security_reports/bandit.json
+bandit -r src/ -f html -o security_reports/bandit.html
 ```
 
 **Filesystem/container threats:**
 ```bash
-trivy fs .
+mkdir -p security_reports
+trivy fs . --format json -o security_reports/trivy.json
+python -c "
+import json, html
+data = json.load(open('security_reports/trivy.json', 'r', encoding='utf-8'))
+body = '<html><body><h1>trivy report</h1><pre>' + html.escape(json.dumps(data, indent=2)) + '</pre></body></html>'
+open('security_reports/trivy.html', 'w', encoding='utf-8').write(body)
+"
 ```
 
 ## All Security Scans
 
 ```bash
-echo "=== Dependency Audit ===" && pip-audit && \
-echo "=== Code Security ===" && bandit -r src/ && \
-echo "=== Filesystem Scan ===" && trivy fs .
+mkdir -p security_reports
+
+echo "=== Dependency Audit ==="
+pip-audit -f json > security_reports/pip-audit.json || true
+
+echo "=== Code Security ==="
+bandit -r src/ -f json -o security_reports/bandit.json || true
+bandit -r src/ -f html -o security_reports/bandit.html || true
+
+echo "=== Filesystem Scan ==="
+trivy fs . --format json -o security_reports/trivy.json || true
+
+python -c "
+import json, html
+for src, title, dst in [
+  ('security_reports/pip-audit.json', 'pip-audit report', 'security_reports/pip-audit.html'),
+  ('security_reports/trivy.json', 'trivy report', 'security_reports/trivy.html'),
+]:
+    try:
+        data = json.load(open(src, 'r', encoding='utf-8'))
+        body = '<html><body><h1>' + html.escape(title) + '</h1><pre>' + html.escape(json.dumps(data, indent=2)) + '</pre></body></html>'
+        open(dst, 'w', encoding='utf-8').write(body)
+    except FileNotFoundError:
+        pass
+"
+
+echo "Reports generated in security_reports/"
 ```
 
 ---
@@ -87,6 +127,6 @@ echo "=== Filesystem Scan ===" && trivy fs .
 pip-audit --fix
 ```
 
-**Reports**: Check `security_reports/` for HTML and JSON outputs.
+**Reports**: Check `security_reports/` for JSON outputs and generated HTML summaries.
 
 **Tip**: Run this before pushing to catch issues early. CI will re-run these checks on your PR.

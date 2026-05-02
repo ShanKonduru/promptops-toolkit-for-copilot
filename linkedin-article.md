@@ -28,7 +28,7 @@ It covers the full development lifecycle:
 **One concrete example (triggered inside VS Code):**
 
 ```
-run-tests-with-coverage module=payments threshold=85
+/run-tests-with-coverage src/payments 85
 ```
 
 This triggers a full workflow:
