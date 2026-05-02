@@ -6,6 +6,8 @@ Most teams don't lack good AI prompts. They lack a way to reuse them without fri
 
 **PromptOps Toolkit** is a collection of structured Markdown prompt files that plug directly into VS Code Copilot's custom prompt feature and standardize day-to-day engineering tasks across the full development lifecycle.
 
+> Important: These prompts generate shell commands. Use at your own risk. Always inspect generated commands before execution. Maintainers are not responsible for data loss from AI-generated scripts.
+
 ---
 
 ## Table of Contents
@@ -32,6 +34,7 @@ Most teams don't lack good AI prompts. They lack a way to reuse them without fri
 - [Supported Languages & Runtimes](#supported-languages--runtimes)
 - [Tool Reference](#tool-reference)
 - [Security & Trust](#security--trust)
+- [Prompt Tiers](#prompt-tiers)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -408,6 +411,8 @@ The prompt body contains shell commands and usage patterns. Parameters are refer
 
 **Self-healing execution:** Execution prompts include pre-flight checks that detect missing tools and install them before running primary tasks.
 
+**Mandatory review clause:** Prompts must present the final command/script and require explicit user confirmation before execution, with elevated privilege warnings when applicable.
+
 ---
 
 ## Syncing Prompts to VS Code
@@ -419,6 +424,13 @@ The prompt body contains shell commands and usage patterns. Parameters are refer
 | Linux | `sync-prompts.sh` | `~/.config/Code/User/prompts` |
 
 Both scripts auto-detect the correct path — no hardcoded values.
+
+Default behavior syncs vetted prompts from `prompts/core` only.
+
+To include community/experimental prompts:
+
+- Windows: `set INCLUDE_EXPERIMENTAL=1 && sync-prompts.bat`
+- macOS/Linux: `INCLUDE_EXPERIMENTAL=1 ./sync-prompts.sh`
 
 **Team workflow:**
 1. Team member clones the repo
@@ -506,8 +518,15 @@ Implemented controls:
 - Rule-based prompt scanner script: `scripts/prompt_safety_scan.py`
 - CODEOWNERS enforcement for prompt and policy files: `.github/CODEOWNERS`
 - Contributor safety requirements: `CONTRIBUTING.md`
+- Contributor safety contract: `CONTRIBUTORS.md`
 - Vulnerability disclosure policy: `SECURITY.md`
 - PR safety checklist template: `.github/pull_request_template.md`
+
+Threats explicitly covered in policy and automation:
+
+- Hidden payload injection in prompt bodies
+- Supply-chain poisoning via typosquatted tool/package names
+- Indirect prompt injection from untrusted repository content
 
 Run the scanner locally before opening a pull request:
 
@@ -517,16 +536,33 @@ python scripts/prompt_safety_scan.py
 
 ---
 
+## Prompt Tiers
+
+- `prompts/core`: Vetted prompts audited by maintainers and synced by default
+- `prompts/community-contrib`: New or experimental prompts that require extra scrutiny before promotion
+
+Promotion to Core requires:
+
+1. Maintainer review and CODEOWNERS approval
+2. Safety scanner passing in CI
+3. Review clause and hidden safeguard block present
+4. Registry/tooling checks constrained to official sources
+
+---
+
 ## Contributing
 
 Contributions are welcome. To add a new prompt:
 
-1. Create a new `.prompt.md` file following the existing frontmatter schema
-2. Include a pre-flight tool check section
-3. Document parameters in the frontmatter
-4. Update this README with the new prompt entry
-5. Run `sync-prompts.bat` or `sync-prompts.sh` to test locally
-6. Open a pull request
+1. Add new prompts in `prompts/community-contrib`
+2. Include the mandatory hidden `SAFETY_GUARDRAIL` block and Review Clause
+3. Keep auto-install commands on official registries with exact package names
+4. Document parameters in frontmatter and expected behavior in body
+5. Run `python scripts/prompt_safety_scan.py`
+6. Test with `sync-prompts.bat` or `sync-prompts.sh`
+7. Open a pull request
+
+For full policy requirements, see `CONTRIBUTING.md` and `CONTRIBUTORS.md`.
 
 ---
 

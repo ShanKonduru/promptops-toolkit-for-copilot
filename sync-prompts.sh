@@ -14,10 +14,15 @@ fi
 # Get the script directory (where this script is located)
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Verify source directory has prompt files
-if ! ls "$SCRIPT_DIR"/*.prompt.md 1> /dev/null 2>&1; then
-    echo "❌ Error: No prompt files found in $SCRIPT_DIR"
-    echo "Please ensure you're running this script from the dev-ex-engine folder."
+# Prompt tiers
+CORE_DIR="$SCRIPT_DIR/prompts/core"
+COMMUNITY_DIR="$SCRIPT_DIR/prompts/community-contrib"
+INCLUDE_EXPERIMENTAL="${INCLUDE_EXPERIMENTAL:-0}"
+
+# Verify source directory has prompt files in the Core tier
+if ! ls "$CORE_DIR"/*.prompt.md 1> /dev/null 2>&1; then
+    echo "❌ Error: No core prompt files found in $CORE_DIR"
+    echo "Please ensure you're running this script from the repository root."
     exit 1
 fi
 
@@ -31,11 +36,11 @@ if [ ! -d "$ROAMING_PATH" ]; then
     fi
 fi
 
-# Copy all prompt files
-echo "📋 Copying prompt files to: $ROAMING_PATH"
+# Copy prompt files
+echo "📋 Copying Core prompt files to: $ROAMING_PATH"
 copy_count=0
 
-for file in "$SCRIPT_DIR"/*.prompt.md; do
+for file in "$CORE_DIR"/*.prompt.md; do
     if [ -f "$file" ]; then
         filename=$(basename "$file")
         echo "  → Copying $filename"
@@ -47,6 +52,22 @@ for file in "$SCRIPT_DIR"/*.prompt.md; do
         fi
     fi
 done
+
+if [[ "$INCLUDE_EXPERIMENTAL" == "1" ]] && ls "$COMMUNITY_DIR"/*.prompt.md 1> /dev/null 2>&1; then
+    echo "🧪 INCLUDE_EXPERIMENTAL=1 detected. Copying Community prompts as well."
+    for file in "$COMMUNITY_DIR"/*.prompt.md; do
+        if [ -f "$file" ]; then
+            filename=$(basename "$file")
+            echo "  → Copying experimental $filename"
+            cp "$file" "$ROAMING_PATH/$filename"
+            if [ $? -eq 0 ]; then
+                ((copy_count++))
+            else
+                echo "    ❌ Failed to copy $filename"
+            fi
+        fi
+    done
+fi
 
 # Report results
 echo ""

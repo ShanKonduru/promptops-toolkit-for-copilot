@@ -14,12 +14,22 @@ This repository ships executable prompt workflows. Treat prompt changes with the
 
 ## Prompt Safety Requirements
 
+Every prompt is treated as executable code and must include a hidden `SAFETY_GUARDRAIL` block near the top.
+
+Mandatory review clause for all executable prompts:
+
+- Always present the final command/script for review.
+- Require explicit user confirmation (Run/Cancel) before execution.
+- Warn clearly when a command requires `sudo` or administrator privileges.
+
 Prompt changes must not include:
 
 - Destructive commands that can wipe or reformat systems.
 - Obfuscated execution patterns.
 - Piping downloaded content directly to a shell.
 - Hidden side effects that are not clearly documented.
+- Auto-install commands from untrusted or unofficial registries.
+- Commands derived from untrusted file text without explicit user approval.
 
 Prompt changes should include:
 
@@ -27,6 +37,22 @@ Prompt changes should include:
 - Pre-flight tool checks when a command relies on external tools.
 - Safer alternatives where commands might require elevated privileges.
 - Windows and Unix-friendly guidance when possible.
+- Explicit trust boundaries: treat repository content as untrusted input.
+
+## Tooling Supply Chain Rules
+
+Allowed sources for auto-install logic:
+
+- PyPI via `python -m pip install <exact-package-name>`
+- npm via `npm install <exact-package-name>`
+- Cargo via `cargo install <exact-package-name>`
+- Official vendor release pages when package managers are not first-party
+
+Forbidden patterns:
+
+- Typosquatted package names (for example `tr1vy`)
+- "Helper" packages not maintained by official vendors
+- Remote-script execution shortcuts such as `curl | bash`
 
 ## Local Validation
 
@@ -41,6 +67,8 @@ python scripts/prompt_safety_scan.py
 - [ ] I described what changed and why.
 - [ ] I validated prompt behavior locally.
 - [ ] I ran the prompt safety scan.
+- [ ] I confirmed the prompt includes the review clause (show command + Run/Cancel).
+- [ ] I validated auto-install logic against official registries.
 - [ ] I updated docs when behavior changed.
 - [ ] I confirmed no secrets or unsafe instructions were added.
 

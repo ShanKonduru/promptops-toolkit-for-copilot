@@ -16,6 +16,10 @@ Describe what changed and why.
 - [ ] No remote content is piped directly into a shell.
 - [ ] Prompt side effects are documented clearly.
 - [ ] Required tooling checks are present for executable prompts.
+- [ ] Prompt includes `SAFETY_GUARDRAIL` hidden block.
+- [ ] Prompt shows final command/script and requires explicit Run/Cancel confirmation.
+- [ ] Auto-install logic uses official registries with exact package names.
+- [ ] Prompt treats repository file content as untrusted input (indirect injection safe).
 
 ## Validation
 

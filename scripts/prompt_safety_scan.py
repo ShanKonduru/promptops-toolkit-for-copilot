@@ -61,12 +61,39 @@ RULES = [
         pattern=re.compile(r"\bmkfs(\.[A-Za-z0-9_]+)?\b", re.IGNORECASE),
         reason="Filesystem formatting is destructive.",
     ),
+    Rule(
+        name="suspicious_typosquat_trivy",
+        pattern=re.compile(r"\b(tr1vy|trivy-fix)\b", re.IGNORECASE),
+        reason="Potential typosquatted package/tool reference.",
+    ),
+    Rule(
+        name="sensitive_file_exfiltration",
+        pattern=re.compile(
+            r"(cat|type|Get-Content)[^\n\r]*(\.env\b|~/\.ssh|~\/\.aws)[^\n\r]*(curl|Invoke-WebRequest|wget)",
+            re.IGNORECASE,
+        ),
+        reason="Potential exfiltration of sensitive local files.",
+    ),
+]
+
+REQUIRED_GUARDRAIL_MARKERS = [
+    "SAFETY_GUARDRAIL",
+    "Never execute commands silently",
+    "require explicit user approval",
 ]
 
 
 def scan_file(file_path: pathlib.Path) -> list[str]:
     issues: list[str] = []
-    lines = file_path.read_text(encoding="utf-8", errors="replace").splitlines()
+    raw = file_path.read_text(encoding="utf-8", errors="replace")
+    lines = raw.splitlines()
+
+    for marker in REQUIRED_GUARDRAIL_MARKERS:
+        if marker not in raw:
+            issues.append(
+                f"{file_path.as_posix()}:1: [missing_guardrail] Missing required safety marker: {marker}"
+            )
+
     for i, line in enumerate(lines, start=1):
         for rule in RULES:
             if rule.pattern.search(line):
@@ -78,7 +105,12 @@ def scan_file(file_path: pathlib.Path) -> list[str]:
 
 def main() -> int:
     root = pathlib.Path(__file__).resolve().parents[1]
-    prompt_files = sorted(root.glob("*.prompt.md"))
+    prompt_files = sorted(root.rglob("*.prompt.md"))
+    prompt_files = [
+        p
+        for p in prompt_files
+        if ".git" not in p.parts and "node_modules" not in p.parts and "venv" not in p.parts
+    ]
 
     if not prompt_files:
         print("No .prompt.md files found. Nothing to scan.")

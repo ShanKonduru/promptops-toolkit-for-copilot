@@ -9,11 +9,15 @@ set "ROAMING_PATH=%APPDATA%\Code\User\prompts"
 
 REM Get current script directory
 set "SCRIPT_DIR=%~dp0"
+set "CORE_DIR=%SCRIPT_DIR%prompts\core"
+set "COMMUNITY_DIR=%SCRIPT_DIR%prompts\community-contrib"
 
-REM Verify source directory has prompt files
-if not exist "%SCRIPT_DIR%*.prompt.md" (
-    echo ❌ Error: No prompt files found in %SCRIPT_DIR%
-    echo Please ensure you're running this script from the dev-ex-engine folder.
+if "%INCLUDE_EXPERIMENTAL%"=="" set "INCLUDE_EXPERIMENTAL=0"
+
+REM Verify source directory has core prompt files
+if not exist "%CORE_DIR%\*.prompt.md" (
+    echo ❌ Error: No core prompt files found in %CORE_DIR%
+    echo Please ensure you're running this script from the repository root.
     exit /b 1
 )
 
@@ -27,18 +31,33 @@ if not exist "%ROAMING_PATH%" (
     )
 )
 
-REM Copy all prompt files
-echo 📋 Copying prompt files to: %ROAMING_PATH%
+REM Copy core prompt files
+echo 📋 Copying Core prompt files to: %ROAMING_PATH%
 setlocal enabledelayedexpansion
 set "copy_count=0"
 
-for %%F in ("%SCRIPT_DIR%*.prompt.md") do (
+for %%F in ("%CORE_DIR%\*.prompt.md") do (
     echo   → Copying %%~nxF
     copy "%%F" "%ROAMING_PATH%\%%~nxF" >nul
     if errorlevel 1 (
         echo     ❌ Failed to copy %%~nxF
     ) else (
         set /a copy_count+=1
+    )
+)
+
+if "%INCLUDE_EXPERIMENTAL%"=="1" (
+    if exist "%COMMUNITY_DIR%\*.prompt.md" (
+        echo 🧪 INCLUDE_EXPERIMENTAL=1 detected. Copying Community prompts as well.
+        for %%F in ("%COMMUNITY_DIR%\*.prompt.md") do (
+            echo   → Copying experimental %%~nxF
+            copy "%%F" "%ROAMING_PATH%\%%~nxF" >nul
+            if errorlevel 1 (
+                echo     ❌ Failed to copy %%~nxF
+            ) else (
+                set /a copy_count+=1
+            )
+        )
     )
 )
 
